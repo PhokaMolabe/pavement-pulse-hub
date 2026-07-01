@@ -2,10 +2,13 @@ import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "motion/react";
 import { Heart, Share2, Shield, Truck, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { ProductCard } from "@/components/site/ProductCard";
 import { getProduct, PRODUCTS } from "@/lib/products";
+import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: ({ params }) => {
@@ -38,7 +41,30 @@ export const Route = createFileRoute("/product/$slug")({
 function ProductPage() {
   const { product } = Route.useLoaderData();
   const [size, setSize] = useState<number | null>(null);
+  const cart = useCart();
+  const wish = useWishlist();
+  const saved = wish.has(product.slug);
   const related = PRODUCTS.filter((p) => p.slug !== product.slug).slice(0, 4);
+
+  const jsonLd = {
+    "@context": "https://schema.org", "@type": "Product",
+    name: product.name, image: [product.image], description: product.description,
+    brand: { "@type": "Brand", name: product.brand },
+    offers: { "@type": "Offer", priceCurrency: "ZAR", price: product.price, availability: "https://schema.org/InStock" },
+  };
+
+  function addToBag() {
+    if (!size) return;
+    cart.add({ slug: product.slug, name: product.name, brand: product.brand, colorway: product.colorway, price: product.price, image: product.image, size });
+    cart.setOpen(true);
+    toast.success(`${product.name} added — UK ${size}`);
+  }
+  function shareIt() {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    if (navigator.share) navigator.share({ title: product.name, url }).catch(() => {});
+    else { navigator.clipboard?.writeText(url); toast.success("Link copied"); }
+  }
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -103,18 +129,20 @@ function ProductPage() {
 
           <div className="mt-8 flex gap-3">
             <button
+              onClick={addToBag}
               disabled={!size}
               className="flex-1 rounded-full bg-pulse text-black py-4 font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition pulse-glow"
             >
               {size ? `Add to bag · R${product.price.toLocaleString()}` : "Select a size"}
             </button>
-            <button className="rounded-full border border-border w-14 grid place-items-center hover:border-pulse hover:text-pulse transition" aria-label="Wishlist">
-              <Heart className="h-5 w-5" />
+            <button onClick={() => { wish.toggle(product.slug); toast(saved ? "Removed from wishlist" : "Saved to wishlist"); }} className={`rounded-full border w-14 grid place-items-center transition ${saved ? "border-pulse text-pulse bg-pulse/10" : "border-border hover:border-pulse hover:text-pulse"}`} aria-label="Wishlist">
+              <Heart className={`h-5 w-5 ${saved ? "fill-current" : ""}`} />
             </button>
-            <button className="rounded-full border border-border w-14 grid place-items-center hover:border-pulse hover:text-pulse transition" aria-label="Share">
+            <button onClick={shareIt} className="rounded-full border border-border w-14 grid place-items-center hover:border-pulse hover:text-pulse transition" aria-label="Share">
               <Share2 className="h-5 w-5" />
             </button>
           </div>
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
           <p className="mt-10 text-muted-foreground leading-relaxed">{product.description}</p>
 

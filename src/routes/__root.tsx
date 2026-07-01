@@ -9,8 +9,12 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
+import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { CartProvider } from "@/lib/cart";
+import { WishlistProvider } from "@/lib/wishlist";
+import { CartDrawer } from "@/components/site/CartDrawer";
 
 function NotFoundComponent() {
   return (
@@ -87,7 +91,13 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <CartProvider>
+        <WishlistProvider>
+          <Outlet />
+          <CartDrawer />
+          <Toaster theme="dark" position="bottom-right" toastOptions={{ style: { background: "hsl(var(--surface))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))" } }} />
+        </WishlistProvider>
+      </CartProvider>
     </QueryClientProvider>
   );
 }
