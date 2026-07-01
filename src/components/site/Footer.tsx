@@ -1,6 +1,30 @@
 import logo from "@/assets/logo.asset.json";
 import { Link } from "@tanstack/react-router";
 
+const columns = [
+  { title: "Shop", links: [
+    { label: "New Arrivals", to: "/catalog" },
+    { label: "Drops", to: "/drops" },
+    { label: "Wishlist", to: "/wishlist" },
+    { label: "Journal", to: "/journal" },
+  ] },
+  { title: "Help", links: [
+    { label: "Contact", to: "/contact" },
+    { label: "Shipping", to: "/shipping" },
+    { label: "Returns", to: "/returns" },
+    { label: "FAQ", to: "/faq" },
+  ] },
+  { title: "Company", links: [
+    { label: "About", to: "/about" },
+    { label: "Journal", to: "/journal" },
+    { label: "Contact", to: "/contact" },
+  ] },
+  { title: "Legal", links: [
+    { label: "Terms", to: "/terms" },
+    { label: "Privacy", to: "/privacy" },
+  ] },
+] as const;
+
 export function Footer() {
   return (
     <footer className="mt-32 border-t border-border bg-background">
@@ -14,7 +38,7 @@ export function Footer() {
             <p className="mt-5 font-display text-2xl tracking-tight text-balance max-w-sm">
               The soul <span className="text-muted-foreground">/</span> sole of the city.
             </p>
-            <form className="mt-8 flex max-w-sm gap-0 border-b border-foreground/40 pb-2">
+            <form className="mt-8 flex max-w-sm gap-0 border-b border-foreground/40 pb-2" onSubmit={(e) => e.preventDefault()}>
               <input
                 placeholder="your@email.com"
                 className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none"
@@ -22,17 +46,14 @@ export function Footer() {
               <button className="text-xs font-bold tracking-widest text-pulse hover:underline">JOIN →</button>
             </form>
           </div>
-          {[
-            { title: "Shop", links: ["New Arrivals", "Drops", "Sale", "Gift Cards"] },
-            { title: "Help", links: ["Contact", "Shipping", "Returns", "FAQ"] },
-            { title: "Company", links: ["About", "Journal", "Stores", "Careers"] },
-            { title: "Legal", links: ["Terms", "Privacy", "POPIA", "Accessibility"] },
-          ].map((col) => (
+          {columns.map((col) => (
             <div key={col.title}>
               <div className="text-xs font-bold tracking-widest text-muted-foreground mb-4">{col.title.toUpperCase()}</div>
               <ul className="space-y-3 text-sm">
                 {col.links.map((l) => (
-                  <li key={l}><Link to="/" className="hover:text-pulse transition-colors">{l}</Link></li>
+                  <li key={l.label}>
+                    <Link to={l.to} className="hover:text-pulse transition-colors">{l.label}</Link>
+                  </li>
                 ))}
               </ul>
             </div>
