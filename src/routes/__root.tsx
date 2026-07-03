@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CartProvider } from "@/lib/cart";
 import { WishlistProvider } from "@/lib/wishlist";
 import { CartDrawer } from "@/components/site/CartDrawer";
+import { AuthProvider } from "@/lib/auth";
 
 function NotFoundComponent() {
   return (
@@ -91,13 +92,15 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <CartProvider>
-        <WishlistProvider>
-          <Outlet />
-          <CartDrawer />
-          <Toaster theme="dark" position="bottom-right" toastOptions={{ style: { background: "hsl(var(--surface))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))" } }} />
-        </WishlistProvider>
-      </CartProvider>
+      <AuthProvider>
+        <CartProvider>
+          <WishlistProvider>
+            <Outlet />
+            <CartDrawer />
+            <Toaster theme="dark" position="bottom-right" toastOptions={{ style: { background: "hsl(var(--surface))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))" } }} />
+          </WishlistProvider>
+        </CartProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

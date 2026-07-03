@@ -1,9 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { CheckCircle2, Lock } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { useCart } from "@/lib/cart";
+import { submitOrder } from "@/lib/api/orders.functions";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [
@@ -17,15 +20,43 @@ export const Route = createFileRoute("/checkout")({
 function Checkout() {
   const { items, subtotal, clear } = useCart();
   const [placed, setPlaced] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState({
+    email: "", firstName: "", lastName: "", address: "", suburb: "", city: "", postalCode: "", phone: "",
+    delivery: "standard",
+  });
   const navigate = useNavigate();
-  const shipping = subtotal >= 1500 || subtotal === 0 ? 0 : 150;
+  const submit = useServerFn(submitOrder);
+
+  const shippingFor = (mode: string) => mode === "express" ? 280 : mode === "sameday" ? 450 : (subtotal >= 1500 || subtotal === 0 ? 0 : 150);
+  const shipping = shippingFor(form.delivery);
   const total = subtotal + shipping;
 
-  function placeOrder(e: React.FormEvent) {
+  async function placeOrder(e: React.FormEvent) {
     e.preventDefault();
-    const id = "PP-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-    setPlaced(id);
-    clear();
+    setBusy(true);
+    try {
+      const res = await submit({ data: {
+        email: form.email,
+        fullName: `${form.firstName} ${form.lastName}`.trim(),
+        phone: form.phone,
+        address: form.address,
+        suburb: form.suburb,
+        city: form.city,
+        postalCode: form.postalCode,
+        shipping,
+        items: items.map((i) => ({
+          slug: i.slug, name: i.name, brand: i.brand, colorway: i.colorway,
+          size: i.size, qty: i.qty, price: i.price, image: i.image,
+        })),
+      } });
+      setPlaced(res.orderNumber);
+      clear();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Order failed");
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (placed) {
@@ -62,6 +93,8 @@ function Checkout() {
     );
   }
 
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -70,33 +103,33 @@ function Checkout() {
         <div className="mt-10 grid lg:grid-cols-[1fr_420px] gap-10">
           <form onSubmit={placeOrder} className="space-y-10">
             <Section title="Contact">
-              <Field label="Email" type="email" required placeholder="you@example.com" />
+              <Field label="Email" type="email" required placeholder="you@example.com" value={form.email} onChange={set("email")} />
             </Section>
 
             <Section title="Shipping address">
               <div className="grid sm:grid-cols-2 gap-4">
-                <Field label="First name" required />
-                <Field label="Last name" required />
-                <Field label="Address" required className="sm:col-span-2" />
-                <Field label="Suburb" required />
-                <Field label="City" required />
-                <Field label="Postal code" required />
-                <Field label="Phone" type="tel" required />
+                <Field label="First name" required value={form.firstName} onChange={set("firstName")} />
+                <Field label="Last name" required value={form.lastName} onChange={set("lastName")} />
+                <Field label="Address" required className="sm:col-span-2" value={form.address} onChange={set("address")} />
+                <Field label="Suburb" value={form.suburb} onChange={set("suburb")} />
+                <Field label="City" required value={form.city} onChange={set("city")} />
+                <Field label="Postal code" required value={form.postalCode} onChange={set("postalCode")} />
+                <Field label="Phone" type="tel" required value={form.phone} onChange={set("phone")} />
               </div>
             </Section>
 
             <Section title="Delivery">
               <div className="space-y-2">
-                <Radio name="delivery" label="Standard · 3–5 business days" price={shipping === 0 ? "Free" : "R150"} defaultChecked />
-                <Radio name="delivery" label="Express · 1–2 business days" price="R280" />
-                <Radio name="delivery" label="Same-day (JHB / CPT metro)" price="R450" />
+                <Radio name="delivery" label="Standard · 3–5 business days" price={shippingFor("standard") === 0 ? "Free" : "R150"} checked={form.delivery === "standard"} onChange={() => setForm({ ...form, delivery: "standard" })} />
+                <Radio name="delivery" label="Express · 1–2 business days" price="R280" checked={form.delivery === "express"} onChange={() => setForm({ ...form, delivery: "express" })} />
+                <Radio name="delivery" label="Same-day (JHB / CPT metro)" price="R450" checked={form.delivery === "sameday"} onChange={() => setForm({ ...form, delivery: "sameday" })} />
               </div>
             </Section>
 
             <Section title="Payment">
               <div className="rounded-lg border border-border p-4 bg-surface flex items-center gap-3 text-sm">
                 <Lock className="h-4 w-4 text-pulse" />
-                <span className="text-muted-foreground">Payments are simulated in this demo. Connect Shopify or Stripe to accept live payments.</span>
+                <span className="text-muted-foreground">Card capture is simulated. Connect Stripe or PayFast in Settings to accept live payments.</span>
               </div>
               <div className="grid sm:grid-cols-2 gap-4 mt-4">
                 <Field label="Card number" placeholder="4242 4242 4242 4242" className="sm:col-span-2" />
@@ -106,8 +139,8 @@ function Checkout() {
               </div>
             </Section>
 
-            <button type="submit" className="w-full rounded-full bg-pulse text-black py-4 font-bold hover:opacity-90 transition pulse-glow">
-              Place order · R{total.toLocaleString()}
+            <button disabled={busy} type="submit" className="w-full rounded-full bg-pulse text-black py-4 font-bold hover:opacity-90 transition pulse-glow disabled:opacity-50">
+              {busy ? "Placing order…" : `Place order · R${total.toLocaleString()}`}
             </button>
           </form>
 

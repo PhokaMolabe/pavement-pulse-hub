@@ -4,11 +4,13 @@ import { useState } from "react";
 import logo from "@/assets/logo.asset.json";
 import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/lib/wishlist";
+import { useAuth } from "@/lib/auth";
 import { SearchDialog } from "./SearchDialog";
 
 export function Header() {
   const cart = useCart();
   const wish = useWishlist();
+  const { isAdmin } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -26,6 +28,7 @@ export function Header() {
             <Link to="/drops" className="hover:text-pulse transition-colors">Drops</Link>
             <Link to="/journal" className="hover:text-pulse transition-colors">Journal</Link>
             <Link to="/about" className="hover:text-pulse transition-colors">About</Link>
+            {isAdmin && <Link to="/admin" className="text-pulse hover:opacity-80 transition-colors">Admin</Link>}
           </nav>
 
           <div className="ml-auto flex items-center gap-1">
