@@ -47,20 +47,27 @@ export const submitOrder = createServerFn({ method: "POST" })
     const total = subtotal + data.shipping;
     const orderNumber = "PP-" + Math.random().toString(36).slice(2, 8).toUpperCase();
 
-    const { error } = await supabaseAdmin.from("orders").insert({
-      order_number: orderNumber,
-      user_id: userId,
-      email: data.email,
-      full_name: data.fullName,
-      phone: data.phone ?? null,
-      address: data.address,
-      suburb: data.suburb ?? null,
-      city: data.city,
-      postal_code: data.postalCode,
-      subtotal, shipping: data.shipping, total,
-      items: data.items,
+    const { error } = await supabaseAdmin.rpc("place_order", {
+      _user_id: userId,
+      _order_number: orderNumber,
+      _email: data.email,
+      _full_name: data.fullName,
+      _phone: data.phone ?? null,
+      _address: data.address,
+      _suburb: data.suburb ?? null,
+      _city: data.city,
+      _postal_code: data.postalCode,
+      _subtotal: subtotal,
+      _shipping: data.shipping,
+      _total: total,
+      _items: data.items,
     });
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (error.message?.startsWith("Out of stock")) {
+        throw new Error("Sorry — one of your items just sold out. Please refresh and try again.");
+      }
+      throw new Error(error.message);
+    }
 
     const { sendOrderEmails } = await import("@/lib/email/sendOrderEmails.server");
     await sendOrderEmails({
