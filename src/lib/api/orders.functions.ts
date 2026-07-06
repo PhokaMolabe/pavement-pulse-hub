@@ -48,7 +48,7 @@ export const submitOrder = createServerFn({ method: "POST" })
     const orderNumber = "PP-" + Math.random().toString(36).slice(2, 8).toUpperCase();
 
     const { error } = await supabaseAdmin.rpc("place_order", {
-      _user_id: userId,
+      _user_id: (userId ?? null) as any,
       _order_number: orderNumber,
       _email: data.email,
       _full_name: data.fullName,
