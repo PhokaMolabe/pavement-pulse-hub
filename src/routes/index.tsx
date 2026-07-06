@@ -5,7 +5,8 @@ import { ArrowUpRight, Bell } from "lucide-react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { ProductCard } from "@/components/site/ProductCard";
-import { PRODUCTS, BRANDS, DROPS, JOURNAL } from "@/lib/products";
+import { BRANDS, DROPS, JOURNAL } from "@/lib/products";
+import { useProducts } from "@/lib/useProducts";
 import heroImg from "@/assets/hero-sneaker.jpg";
 
 export const Route = createFileRoute("/")({
@@ -106,6 +107,7 @@ function Marquee() {
 }
 
 function Featured() {
+  const { products } = useProducts();
   return (
     <section className="mx-auto max-w-[1400px] px-6 py-24">
       <div className="flex items-end justify-between mb-12">
@@ -118,7 +120,7 @@ function Featured() {
         </Link>
       </div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {PRODUCTS.slice(0, 4).map((p, i) => <ProductCard key={p.slug} product={p} index={i} />)}
+        {products.slice(0, 4).map((p, i) => <ProductCard key={p.slug} product={p} index={i} />)}
       </div>
     </section>
   );
@@ -179,7 +181,9 @@ function BrandsStrip() {
 }
 
 function SneakerOfTheWeek() {
-  const p = PRODUCTS[0];
+  const { products } = useProducts();
+  const p = products[0];
+  if (!p) return null;
   return (
     <section className="relative overflow-hidden bg-black text-white">
       <div className="absolute inset-0 gradient-radial-pulse opacity-30" />
