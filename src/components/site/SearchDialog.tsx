@@ -2,10 +2,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { Link } from "@tanstack/react-router";
 import { Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { PRODUCTS } from "@/lib/products";
+import { useProducts } from "@/lib/useProducts";
 
 export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [q, setQ] = useState("");
+  const { products } = useProducts();
 
   useEffect(() => {
     if (!open) return;
@@ -19,14 +20,14 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
 
   const results = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return PRODUCTS.slice(0, 6);
-    return PRODUCTS.filter((p) =>
+    if (!s) return products.slice(0, 6);
+    return products.filter((p) =>
       p.name.toLowerCase().includes(s) ||
       p.brand.toLowerCase().includes(s) ||
       p.colorway.toLowerCase().includes(s) ||
       p.category.toLowerCase().includes(s),
     ).slice(0, 8);
-  }, [q]);
+  }, [q, products]);
 
   return (
     <AnimatePresence>

@@ -28,14 +28,14 @@ export const Route = createFileRoute("/product/$slug")({
 
 function ProductPage() {
   const { slug } = Route.useParams();
-  const { product, isLoading } = useProduct(slug);
+  const { product: found, isLoading } = useProduct(slug);
   const { products } = useProducts();
   const [size, setSize] = useState<number | null>(null);
   const cart = useCart();
   const wish = useWishlist();
 
   if (isLoading) return <div className="min-h-screen bg-background" />;
-  if (!product) return (
+  if (!found) return (
     <div className="min-h-screen grid place-items-center bg-background">
       <div className="text-center">
         <h1 className="font-display text-4xl font-bold">Pair not found</h1>
@@ -43,6 +43,7 @@ function ProductPage() {
       </div>
     </div>
   );
+  const product = found;
   const saved = wish.has(product.slug);
   const related = products.filter((p) => p.slug !== product.slug).slice(0, 4);
 
