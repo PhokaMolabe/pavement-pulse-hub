@@ -52,15 +52,15 @@ export const submitOrder = createServerFn({ method: "POST" })
       _order_number: orderNumber,
       _email: data.email,
       _full_name: data.fullName,
-      _phone: data.phone ?? null,
+      _phone: data.phone ?? "",
       _address: data.address,
-      _suburb: data.suburb ?? null,
+      _suburb: data.suburb ?? "",
       _city: data.city,
       _postal_code: data.postalCode,
       _subtotal: subtotal,
       _shipping: data.shipping,
       _total: total,
-      _items: data.items,
+      _items: data.items as any,
     });
     if (error) {
       if (error.message?.startsWith("Out of stock")) {
