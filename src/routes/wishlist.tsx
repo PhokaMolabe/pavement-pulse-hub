@@ -4,7 +4,7 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { ProductCard } from "@/components/site/ProductCard";
 import { useWishlist } from "@/lib/wishlist";
-import { PRODUCTS } from "@/lib/products";
+import { useProducts } from "@/lib/useProducts";
 
 export const Route = createFileRoute("/wishlist")({
   head: () => ({ meta: [
@@ -17,7 +17,8 @@ export const Route = createFileRoute("/wishlist")({
 
 function WishlistPage() {
   const { slugs, clear } = useWishlist();
-  const items = PRODUCTS.filter((p) => slugs.includes(p.slug));
+  const { products } = useProducts();
+  const items = products.filter((p) => slugs.includes(p.slug));
 
   return (
     <div className="min-h-screen bg-background">

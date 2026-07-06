@@ -1,4 +1,4 @@
-import { createFileRoute, notFound, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "motion/react";
 import { Heart, Share2, Shield, Truck, RotateCcw } from "lucide-react";
@@ -6,27 +6,15 @@ import { toast } from "sonner";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { ProductCard } from "@/components/site/ProductCard";
-import { getProduct, PRODUCTS } from "@/lib/products";
 import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/lib/wishlist";
+import { useProduct, useProducts } from "@/lib/useProducts";
 
 export const Route = createFileRoute("/product/$slug")({
-  loader: ({ params }) => {
-    const product = getProduct(params.slug);
-    if (!product) throw notFound();
-    return { product };
-  },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.product.name} — Pavement Pulse` },
-          { name: "description", content: loaderData.product.description },
-          { property: "og:title", content: `${loaderData.product.name} — Pavement Pulse` },
-          { property: "og:description", content: loaderData.product.description },
-          { property: "og:image", content: loaderData.product.image },
-        ]
-      : [],
-  }),
+  head: () => ({ meta: [
+    { title: "Product — Pavement Pulse" },
+    { name: "description", content: "Shop authentic sneakers on Pavement Pulse." },
+  ] }),
   notFoundComponent: () => (
     <div className="min-h-screen grid place-items-center bg-background">
       <div className="text-center">
@@ -39,12 +27,24 @@ export const Route = createFileRoute("/product/$slug")({
 });
 
 function ProductPage() {
-  const { product } = Route.useLoaderData();
+  const { slug } = Route.useParams();
+  const { product, isLoading } = useProduct(slug);
+  const { products } = useProducts();
   const [size, setSize] = useState<number | null>(null);
   const cart = useCart();
   const wish = useWishlist();
+
+  if (isLoading) return <div className="min-h-screen bg-background" />;
+  if (!product) return (
+    <div className="min-h-screen grid place-items-center bg-background">
+      <div className="text-center">
+        <h1 className="font-display text-4xl font-bold">Pair not found</h1>
+        <Link to="/catalog" search={{ brand: undefined }} className="mt-6 inline-block text-pulse hover:underline">Back to shop</Link>
+      </div>
+    </div>
+  );
   const saved = wish.has(product.slug);
-  const related = PRODUCTS.filter((p) => p.slug !== product.slug).slice(0, 4);
+  const related = products.filter((p) => p.slug !== product.slug).slice(0, 4);
 
   const jsonLd = {
     "@context": "https://schema.org", "@type": "Product",

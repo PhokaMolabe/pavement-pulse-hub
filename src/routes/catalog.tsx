@@ -3,7 +3,8 @@ import { useMemo, useState } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { ProductCard } from "@/components/site/ProductCard";
-import { PRODUCTS, BRANDS } from "@/lib/products";
+import { BRANDS } from "@/lib/products";
+import { useProducts } from "@/lib/useProducts";
 
 type Search = { brand?: string };
 
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/catalog")({
 
 function Catalog() {
   const { brand } = Route.useSearch();
+  const { products: PRODUCTS } = useProducts();
   const [category, setCategory] = useState<string>("All");
   const [sortBy, setSortBy] = useState<"featured" | "price-low" | "price-high">("featured");
   const [activeBrand, setActiveBrand] = useState<string | undefined>(brand);
@@ -30,7 +32,7 @@ function Catalog() {
     if (sortBy === "price-low") list = [...list].sort((a, b) => a.price - b.price);
     if (sortBy === "price-high") list = [...list].sort((a, b) => b.price - a.price);
     return list;
-  }, [category, activeBrand, sortBy]);
+  }, [PRODUCTS, category, activeBrand, sortBy]);
 
   return (
     <div className="min-h-screen bg-background">
