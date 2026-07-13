@@ -135,15 +135,10 @@ function Checkout() {
             <Section title="Payment">
               <div className="rounded-lg border border-border p-4 bg-surface flex items-center gap-3 text-sm">
                 <Lock className="h-4 w-4 text-pulse" />
-                <span className="text-muted-foreground">Card capture is simulated. Connect Stripe or PayFast in Settings to accept live payments.</span>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-4 mt-4">
-                <Field label="Card number" placeholder="4242 4242 4242 4242" className="sm:col-span-2" />
-                <Field label="Expiry" placeholder="MM / YY" />
-                <Field label="CVC" placeholder="123" />
-                <Field label="Name on card" className="sm:col-span-2" />
+                <span className="text-muted-foreground">You'll be redirected to our secure Stripe payment page to complete your purchase. Cards, Apple Pay and Google Pay accepted.</span>
               </div>
             </Section>
+
 
             <button disabled={busy} type="submit" className="w-full rounded-full bg-pulse text-black py-4 font-bold hover:opacity-90 transition pulse-glow disabled:opacity-50">
               {busy ? "Placing order…" : `Place order · R${total.toLocaleString()}`}
