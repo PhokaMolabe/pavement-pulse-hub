@@ -47,7 +47,7 @@ export const submitOrder = createServerFn({ method: "POST" })
     const total = subtotal + data.shipping;
     const orderNumber = "PP-" + Math.random().toString(36).slice(2, 8).toUpperCase();
 
-    const { error } = await supabaseAdmin.rpc("place_order", {
+    const { data: orderId, error } = await supabaseAdmin.rpc("place_order", {
       _user_id: (userId ?? null) as any,
       _order_number: orderNumber,
       _email: data.email,
@@ -61,7 +61,7 @@ export const submitOrder = createServerFn({ method: "POST" })
       _shipping: data.shipping,
       _total: total,
       _items: data.items as any,
-    });
+    } as any);
     if (error) {
       if (error.message?.startsWith("Out of stock")) {
         throw new Error("Sorry — one of your items just sold out. Please refresh and try again.");
@@ -69,20 +69,56 @@ export const submitOrder = createServerFn({ method: "POST" })
       throw new Error(error.message);
     }
 
+    // If Stripe is configured, create a Checkout Session. Order stays `pending`
+    // until the Stripe webhook flips it to `paid` and triggers confirmation emails.
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (stripeKey) {
+      const { getRequest } = await import("@tanstack/react-start/server");
+      const origin = process.env.SITE_ORIGIN
+        ?? getRequest()?.headers.get("origin")
+        ?? "";
+      const body = new URLSearchParams();
+      body.set("mode", "payment");
+      body.set("customer_email", data.email);
+      body.set("success_url", `${origin}/checkout/success?order=${orderNumber}`);
+      body.set("cancel_url", `${origin}/checkout?cancelled=1`);
+      body.set("metadata[order_number]", orderNumber);
+      body.set("metadata[order_id]", String(orderId));
+      const lines = data.items.map((i) => ({
+        currency: "zar", unit_amount: i.price * 100,
+        name: `${i.brand} ${i.name} — UK ${i.size}`, quantity: i.qty,
+      }));
+      if (data.shipping > 0) {
+        lines.push({ currency: "zar", unit_amount: data.shipping * 100, name: "Shipping", quantity: 1 });
+      }
+      lines.forEach((li, idx) => {
+        body.set(`line_items[${idx}][price_data][currency]`, li.currency);
+        body.set(`line_items[${idx}][price_data][unit_amount]`, String(li.unit_amount));
+        body.set(`line_items[${idx}][price_data][product_data][name]`, li.name);
+        body.set(`line_items[${idx}][quantity]`, String(li.quantity));
+      });
+      const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      });
+      const session = await res.json();
+      if (!res.ok) {
+        console.error("[stripe] checkout error", session);
+        throw new Error(session?.error?.message ?? "Payment gateway error");
+      }
+      return { orderNumber, total, checkoutUrl: session.url as string };
+    }
+
+    // No Stripe configured — send order emails immediately (test / dev mode).
     const { sendOrderEmails } = await import("@/lib/email/sendOrderEmails.server");
     await sendOrderEmails({
-      orderNumber,
-      email: data.email,
-      fullName: data.fullName,
-      address: data.address,
-      suburb: data.suburb,
-      city: data.city,
-      postalCode: data.postalCode,
-      items: data.items,
-      subtotal, shipping: data.shipping, total,
+      orderNumber, email: data.email, fullName: data.fullName,
+      address: data.address, suburb: data.suburb, city: data.city, postalCode: data.postalCode,
+      items: data.items, subtotal, shipping: data.shipping, total,
     }).catch((e) => console.log("[email] send failed", e));
 
-    return { orderNumber, total };
+    return { orderNumber, total, checkoutUrl: null as string | null };
   });
 
 export const listMyOrders = createServerFn({ method: "GET" })
