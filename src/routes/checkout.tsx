@@ -50,6 +50,12 @@ function Checkout() {
           size: i.size, qty: i.qty, price: i.price, image: i.image,
         })),
       } });
+      // If Stripe is configured server-side, redirect to hosted Checkout.
+      if (res.checkoutUrl) {
+        clear();
+        window.location.href = res.checkoutUrl;
+        return;
+      }
       setPlaced(res.orderNumber);
       clear();
     } catch (err) {
